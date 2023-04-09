@@ -13,5 +13,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/*! OxFor - library
- */
+//! OxFor - library
+
+pub mod compiler;
+pub mod misc;
+pub mod vm;
