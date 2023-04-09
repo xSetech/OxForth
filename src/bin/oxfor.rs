@@ -29,9 +29,7 @@ fn main() {
     println!("Ctrl-C to exit");
     println!("");
 
-    let mut vm = VM {
-        _ops_applied: 0,
-    };
+    let mut vm = VM::default();
 
     stdout().flush().unwrap();
 
@@ -42,15 +40,14 @@ fn main() {
         // Read text from the user
         let mut input = String::new();
         stdin().read_line(&mut input).unwrap();
-        let input = input.trim();
-        if input.is_empty() {
+        if input.trim().is_empty() {
             continue;
         }
 
         // Scan the input for tokens
         print!("> scan ");
         stdout().flush().unwrap();
-        let scan_result = scan(&input);
+        let scan_result = scan(&input, &vm);
         if let Err(err) = scan_result {
             print!("error: {}\n\n", err.msg);
             stdout().flush().unwrap();

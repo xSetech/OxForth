@@ -22,9 +22,7 @@ mod tests {
     #[test]
     fn base_interpret_test() {
 
-        let mut vm: VM = VM {
-            _ops_applied: 0,
-        };
+        let mut vm: VM = VM::default();
 
         let operations: [Operation; 2] = [
             Operation::NOP,
