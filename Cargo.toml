@@ -1,0 +1,28 @@
+[package]
+name = "OxFor"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-only"
+keywords = [
+    "forth",
+]
+authors = [
+    "Seth Junot",
+]
+
+[lib]
+name = "oxfor"
+path = "src/lib.rs"
+crate-type = ["rlib", "dylib"]
+
+[[bin]]
+name = "oxfor"
+path = "src/bin/oxfor.rs"
+
+[profile.dev]  # note: profile.debug is reserved
+debug = true
+lto = false
+panic = "unwind"
+opt-level = 0
+strip = "none"
+split-debuginfo = "off"
