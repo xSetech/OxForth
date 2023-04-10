@@ -5,10 +5,13 @@ use super::VirtualMachineError;
 
 use super::super::compiler::parser::Operation;
 
-pub fn execute(operations: &[Operation], vm: &mut VM) -> Result<(), VirtualMachineError> {
-    for operation in operations.iter() {
+pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
+    while let Some(operation) = vm.operation_stack.pop() {
         match operation {
-            Operation::NOP => (),
+            Operation::NOP => {
+                continue;
+            },
+            Operation::NOP_INC => (),
         }
         vm._ops_applied += 1;
     }
@@ -23,14 +26,11 @@ mod tests {
     fn base_interpret_test() {
 
         let mut vm: VM = VM::default();
-
-        let operations: [Operation; 2] = [
-            Operation::NOP,
-            Operation::NOP,
-        ];
+        vm.operation_stack.push(Operation::NOP);
+        vm.operation_stack.push(Operation::NOP);
 
         assert_eq!(
-            execute(&operations, &mut vm).unwrap(),
+            execute(&mut vm).unwrap(),
             (),
         );
 

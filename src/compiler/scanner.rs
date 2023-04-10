@@ -67,7 +67,7 @@ fn token_from_bytes(word_or_number: &mut Vec<u8>, vm: &VM) -> Token {
 /// characters are permitted in the parse area. Whitespace is required to be
 /// present at the end of the parse area, but is otherwise ignored. Scanning
 /// stops at the first word, whether defined or undefined.
-pub fn scan(string: &str, vm: &VM) -> Result<Vec<Token>, CompilerError> {
+pub fn scan(string: &str, vm: &mut VM) -> Result<(), CompilerError> {
 
     // For simplicity, assume the parse area is all ASCII characters
     if !string.is_ascii() {
@@ -78,7 +78,6 @@ pub fn scan(string: &str, vm: &VM) -> Result<Vec<Token>, CompilerError> {
         )
     }
 
-    let mut tokens: Vec<Token> = Vec::new();
     let mut word_or_number: Vec<u8> = Vec::new();
 
     // Search for numbers and words, stopping on the first defined "word".
@@ -92,12 +91,12 @@ pub fn scan(string: &str, vm: &VM) -> Result<Vec<Token>, CompilerError> {
             let token: Token = token_from_bytes(&mut word_or_number, vm);
             match token.symbol {
                 Symbol::NUMBER => {
-                    tokens.push(token);
+                    vm.token_stack.push(token);
                     continue;
                 },
                 Symbol::WORD | Symbol::UNDEFINED => {
-                    tokens.push(token);
-                    return Result::Ok(tokens);
+                    vm.token_stack.push(token);
+                    return Result::Ok(());
                 },
             }
         }
@@ -114,7 +113,7 @@ pub fn scan(string: &str, vm: &VM) -> Result<Vec<Token>, CompilerError> {
         )
     }
 
-    return Result::Ok(tokens);
+    return Result::Ok(());
 
 }
 
@@ -127,11 +126,12 @@ mod tests {
     fn scan_test_numbers() {
 
         // test setup
-        let vm: VM = VM::default();
+        let mut vm: VM = VM::default();
 
         // test cases
+        assert!(scan("1 2 3\n", &mut vm).is_ok());
         assert_eq!(
-            scan("1 2 3\n", &vm).unwrap(),
+            vm.token_stack,
             vec![
                 Token {
                     token: String::from("1"),
@@ -155,15 +155,32 @@ mod tests {
     fn scan_test_whitespace() {
 
         // test setup
-        let vm: VM = VM::default();
+        let mut vm: VM = VM::default();
 
         // test cases
-        assert_eq!(scan("1 2 3\n", &vm).unwrap().len(), 3);
-        assert_eq!(scan("1  2  3\n", &vm).unwrap().len(), 3);
-        assert_eq!(scan("1  2  3 \n", &vm).unwrap().len(), 3);
-        assert_eq!(scan(" 1  2  3 \n", &vm).unwrap().len(), 3);
-        assert_eq!(scan("  1  2  3 \n", &vm).unwrap().len(), 3);
-        assert_eq!(scan("  1 \x07 2  3 \n", &vm).unwrap().len(), 3);
+        assert!(scan("1 2 3\n", &mut vm).is_ok());
+        assert_eq!(vm.token_stack.len(), 3);
+        vm.token_stack.clear();
+
+        assert!(scan("1  2  3\n", &mut vm).is_ok());
+        assert_eq!(vm.token_stack.len(), 3);
+        vm.token_stack.clear();
+
+        assert!(scan("1  2  3 \n", &mut vm).is_ok());
+        assert_eq!(vm.token_stack.len(), 3);
+        vm.token_stack.clear();
+
+        assert!(scan(" 1  2  3 \n", &mut vm).is_ok());
+        assert_eq!(vm.token_stack.len(), 3);
+        vm.token_stack.clear();
+
+        assert!(scan("  1  2  3 \n", &mut vm).is_ok());
+        assert_eq!(vm.token_stack.len(), 3);
+        vm.token_stack.clear();
+
+        assert!(scan("  1 \x07 2  3 \n", &mut vm).is_ok());
+        assert_eq!(vm.token_stack.len(), 3);
+        vm.token_stack.clear();
 
     }
 
@@ -172,11 +189,12 @@ mod tests {
     fn scan_test_undefined_words() {
 
         // test setup
-        let vm: VM = VM::default();
+        let mut vm: VM = VM::default();
 
         // test cases
+        assert!(scan("undefined_word\n", &mut vm).is_ok());
         assert_eq!(
-            scan("undefined_word\n", &vm).unwrap(),
+            vm.token_stack,
             vec![
                 Token {
                     token: String::from("undefined_word"),
@@ -184,8 +202,11 @@ mod tests {
                 },
             ]
         );
+        vm.token_stack.clear();
+
+        assert!(scan(" undefined_word\n", &mut vm).is_ok());
         assert_eq!(
-            scan(" undefined_word\n", &vm).unwrap(),
+            vm.token_stack,
             vec![
                 Token {
                     token: String::from("undefined_word"),
@@ -193,8 +214,11 @@ mod tests {
                 },
             ]
         );
+        vm.token_stack.clear();
+
+        assert!(scan(" undefined_word\n", &mut vm).is_ok());
         assert_eq!(
-            scan(" undefined_word\n", &vm).unwrap(),
+            vm.token_stack,
             vec![
                 Token {
                     token: String::from("undefined_word"),
@@ -202,8 +226,11 @@ mod tests {
                 },
             ]
         );
+        vm.token_stack.clear();
+
+        assert!(scan(" 1 undefined_word\n", &mut vm).is_ok());
         assert_eq!(
-            scan(" 1 undefined_word\n", &vm).unwrap(),
+            vm.token_stack,
             vec![
                 Token {
                     token: String::from("1"),
@@ -215,6 +242,7 @@ mod tests {
                 },
             ]
         );
+        vm.token_stack.clear();
 
     }
 
@@ -226,8 +254,9 @@ mod tests {
         let mut vm: VM = VM::default();
 
         // "example" word that is initially undefined
+        assert!(scan("example\n", &mut vm).is_ok());
         assert_eq!(
-            scan("example\n", &vm).unwrap(),
+            vm.token_stack,
             vec![
                 Token {
                     token: String::from("example"),
@@ -235,13 +264,15 @@ mod tests {
                 }
             ],
         );
+        vm.token_stack.clear();
 
         // define the word "example"
         vm.dictionary.insert("example", vec![]);
 
         // scan reports that "example" is a defined word
+        assert!(scan("example\n", &mut vm).is_ok());
         assert_eq!(
-            scan("example\n", &vm).unwrap(),
+            vm.token_stack,
             vec![
                 Token {
                     token: String::from("example"),
@@ -249,6 +280,7 @@ mod tests {
                 }
             ],
         );
+        vm.token_stack.clear();
 
     }
 

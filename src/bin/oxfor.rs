@@ -47,36 +47,34 @@ fn main() {
         // Scan the input for tokens
         print!("> scan ");
         stdout().flush().unwrap();
-        let scan_result = scan(&input, &vm);
+        let scan_result = scan(&input, &mut vm);
         if let Err(err) = scan_result {
             print!("error: {}\n\n", err.msg);
             stdout().flush().unwrap();
             continue
         }
-        let tokens = scan_result.unwrap();
-        print!("ok: {} tokens\n", tokens.len());
-        for token in tokens.iter() {
+        print!("ok: {} tokens\n", vm.token_stack.len());
+        for token in vm.token_stack.iter() {
             print!("\t{:?}\n", token);
         }
 
         // Parse the scanned tokens into operations
         print!("> parse ");
         stdout().flush().unwrap();
-        let parse_result = parse(tokens.as_slice());
+        let parse_result = parse(&mut vm);
         if let Err(err) = parse_result {
             print!("error: {}\n\n", err.msg);
             stdout().flush().unwrap();
             continue
         }
-        let operations = parse_result.unwrap();
-        print!("ok: {} operations\n", operations.len());
-        for operation in operations.iter() {
+        print!("ok: {} operations\n", vm.operation_stack.len());
+        for operation in vm.operation_stack.iter() {
             println!("\t{:?}", operation);
         }
 
         // Apply the operations against the VM
         print!("> execute ");
-        let apply_result = execute(operations.as_slice(), &mut vm);
+        let apply_result = execute(&mut vm);
         if let Err(err) = apply_result {
             print!("error: {}\n\n", err.msg);
             stdout().flush().unwrap();
