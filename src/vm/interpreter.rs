@@ -1,5 +1,7 @@
 //! Interpretation
 
+use std::process;
+
 use super::VM;
 use super::VirtualMachineError;
 
@@ -12,6 +14,10 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                 continue;
             },
             Operation::NOP_INC => (),
+            Operation::BYE => {
+                println!("It's time to say goodbye~");
+                process::exit(0);
+            },
         }
         vm._ops_applied += 1;
     }

@@ -62,6 +62,13 @@ impl<'vm> VM<'vm> {
             ],
         );
 
+        self.dictionary.insert(
+            "BYE",
+            vec![
+                Operation::BYE,
+            ],
+        );
+
     }
 
 }

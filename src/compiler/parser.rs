@@ -17,6 +17,10 @@ pub enum Operation {
     /// Non-operation, but VM operations applied count increments
     NOP_INC,
 
+    /// "Return control to the host operating system"
+    /// https://forth-standard.org/standard/tools/BYE
+    BYE,
+
 }
 
 /// Translate tokens into VM operations
