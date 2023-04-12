@@ -10,14 +10,14 @@ pub mod interpreter;
 /// Data on the data stack is a collection of bytes representing these types.
 /// Casting to different types is done as needed depending on the executing word
 /// and whether it's even possible.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum DataType {
     STRING,
     NUMBER,
 }
 
 /// Data that can be found on the "data stack"
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Data {
     pub value: String,
     pub data_type: DataType,
@@ -73,6 +73,13 @@ impl<'vm> VM<'vm> {
             "DROP",
             vec![
                 Operation::DROP,
+            ],
+        );
+
+        self.dictionary.insert(
+            "DUP",
+            vec![
+                Operation::DUP,
             ],
         );
 

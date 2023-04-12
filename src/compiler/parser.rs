@@ -25,6 +25,10 @@ pub enum Operation {
     /// https://forth-standard.org/standard/core/DROP
     DROP,
 
+    /// ( x -- x x ) Duplicate x.
+    /// https://forth-standard.org/standard/core/DUP
+    DUP,
+
 }
 
 /// Translate tokens into VM operations
