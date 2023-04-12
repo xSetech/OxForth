@@ -90,6 +90,34 @@ impl<'vm> VM<'vm> {
             ],
         );
 
+        self.dictionary.insert(
+            "0=",
+            vec![
+                Operation::ZERO_EQ,
+            ],
+        );
+
+        self.dictionary.insert(
+            "0<",
+            vec![
+                Operation::ZERO_LT,
+            ],
+        );
+
+        self.dictionary.insert(
+            "0>",
+            vec![
+                Operation::ZERO_GT,
+            ],
+        );
+
+        self.dictionary.insert(
+            "0<>",
+            vec![
+                Operation::ZERO_NE,
+            ],
+        );
+
     }
 
 }

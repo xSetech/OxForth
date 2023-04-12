@@ -7,6 +7,28 @@ use super::VirtualMachineError;
 
 use super::super::compiler::parser::Operation;
 
+/// Common cast from STRING DataType to an i64, with error-checking
+fn int_and_data_from_stack<'vm>(vm: &'vm mut VM) -> Result<(i64, &'vm mut Data), VirtualMachineError> {
+    let o: Option<&mut Data> = vm.data_stack.last_mut();
+    if o.is_none() {
+        return Result::Err(
+            VirtualMachineError {
+                msg: String::from("stack underflow"),
+            }
+        );
+    }
+    let d: &mut Data = o.unwrap();
+    if d.data_type != DataType::NUMBER {
+        return Result::Err(
+            VirtualMachineError {
+                msg: String::from("refusing cast: string->number"),
+            }
+        );
+    }
+    let n: i64 = d.value.parse::<i64>().unwrap();
+    return Result::Ok((n, d));
+}
+
 pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
     while let Some(operation) = vm.operation_stack.pop() {
         match operation {
@@ -19,25 +41,8 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
 
             // Core words that happen to be VM operations, in alphabetical order.
             Operation::ABS => {
-                let o: Option<&mut Data> = vm.data_stack.last_mut();
-                if o.is_none() {
-                    return Result::Err(
-                        VirtualMachineError {
-                            msg: String::from("stack underflow"),
-                        }
-                    );
-                }
-                let d: &mut Data = o.unwrap();
-                if d.data_type != DataType::NUMBER {
-                    return Result::Err(
-                        VirtualMachineError {
-                            msg: String::from("refusing cast: string->number"),
-                        }
-                    );
-                }
-                let n: i64 = d.value.parse::<i64>().unwrap();
-                let u: i64 = n.abs();
-                d.value = u.to_string();
+                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                d.value = n.abs().to_string();
             },
             Operation::BYE => {
                 println!("It's time to say goodbye~");
@@ -65,6 +70,26 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                 let x: &Data = x.unwrap();
                 let x2: Data = x.clone();
                 vm.data_stack.push(x2);
+            }
+            Operation::ZERO_EQ => {
+                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                let flag: bool = n == 0;
+                d.value = (flag as i64).to_string();
+            },
+            Operation::ZERO_GT => {
+                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                let flag: bool = n > 0;
+                d.value = (flag as i64).to_string();
+            },
+            Operation::ZERO_LT => {
+                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                let flag: bool = n < 0;
+                d.value = (flag as i64).to_string();
+            },
+            Operation::ZERO_NE => {
+                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                let flag: bool = n != 0;
+                d.value = (flag as i64).to_string();
             }
 
         }
@@ -210,6 +235,198 @@ mod tests {
                     value: String::from("item2"),  // <- top of stack
                     data_type: DataType::STRING,
                 },
+            ]
+        );
+
+    }
+
+    #[test]
+    fn operation_test__zero_comparisons() {
+        let mut vm: VM = VM::default();
+
+        // case:  stack underflow error on empty stack
+        assert!(vm.data_stack.is_empty());
+        vm.operation_stack = vec![Operation::ZERO_EQ];
+        assert!(execute(&mut vm).is_err());
+
+        assert!(vm.data_stack.is_empty());
+        vm.operation_stack = vec![Operation::ZERO_GT];
+        assert!(execute(&mut vm).is_err());
+
+        assert!(vm.data_stack.is_empty());
+        vm.operation_stack = vec![Operation::ZERO_LT];
+        assert!(execute(&mut vm).is_err());
+
+        assert!(vm.data_stack.is_empty());
+        vm.operation_stack = vec![Operation::ZERO_NE];
+        assert!(execute(&mut vm).is_err());
+
+        // case:  refuses to cast a string -> int
+        vm.data_stack = vec![
+            Data {
+                value: String::from("item1"),
+                data_type: DataType::STRING,
+            },
+        ];
+
+        vm.operation_stack = vec![Operation::ZERO_EQ];
+        assert!(execute(&mut vm).is_err());
+        assert_eq!(vm.data_stack.len(), 1);
+
+        vm.operation_stack = vec![Operation::ZERO_GT];
+        assert!(execute(&mut vm).is_err());
+        assert_eq!(vm.data_stack.len(), 1);
+
+        vm.operation_stack = vec![Operation::ZERO_LT];
+        assert!(execute(&mut vm).is_err());
+        assert_eq!(vm.data_stack.len(), 1);
+
+        vm.operation_stack = vec![Operation::ZERO_NE];
+        assert!(execute(&mut vm).is_err());
+        assert_eq!(vm.data_stack.len(), 1);
+
+        // case:  normal comparisons
+        vm.data_stack = vec![
+            Data {
+                value: String::from("1"),
+                data_type: DataType::NUMBER,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ZERO_EQ];
+        assert!(execute(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("0"),
+                    data_type: DataType::NUMBER,
+                }
+            ]
+        );
+
+        vm.data_stack = vec![
+            Data {
+                value: String::from("0"),
+                data_type: DataType::NUMBER,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ZERO_EQ];
+        assert!(execute(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("1"),
+                    data_type: DataType::NUMBER,
+                }
+            ]
+        );
+
+        vm.data_stack = vec![
+            Data {
+                value: String::from("1"),
+                data_type: DataType::NUMBER,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ZERO_GT];
+        assert!(execute(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("1"),
+                    data_type: DataType::NUMBER,
+                }
+            ]
+        );
+
+        vm.data_stack = vec![
+            Data {
+                value: String::from("-1"),
+                data_type: DataType::NUMBER,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ZERO_GT];
+        assert!(execute(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("0"),
+                    data_type: DataType::NUMBER,
+                }
+            ]
+        );
+
+        vm.data_stack = vec![
+            Data {
+                value: String::from("1"),
+                data_type: DataType::NUMBER,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ZERO_LT];
+        assert!(execute(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("0"),
+                    data_type: DataType::NUMBER,
+                }
+            ]
+        );
+
+        vm.data_stack = vec![
+            Data {
+                value: String::from("-1"),
+                data_type: DataType::NUMBER,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ZERO_LT];
+        assert!(execute(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("1"),
+                    data_type: DataType::NUMBER,
+                }
+            ]
+        );
+
+        vm.data_stack = vec![
+            Data {
+                value: String::from("1"),
+                data_type: DataType::NUMBER,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ZERO_NE];
+        assert!(execute(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("1"),
+                    data_type: DataType::NUMBER,
+                }
+            ]
+        );
+
+        vm.data_stack = vec![
+            Data {
+                value: String::from("0"),
+                data_type: DataType::NUMBER,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ZERO_NE];
+        assert!(execute(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("0"),
+                    data_type: DataType::NUMBER,
+                }
             ]
         );
 

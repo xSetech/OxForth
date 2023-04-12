@@ -33,6 +33,22 @@ pub enum Operation {
     /// https://forth-standard.org/standard/core/DUP
     DUP,
 
+    /// ( x -- flag ) flag is true if and only if x is equal to zero.
+    /// https://forth-standard.org/standard/core/ZeroEqual
+    ZERO_EQ,
+
+    /// ( n -- flag ) flag is true if and only if n is less than zero.
+    /// https://forth-standard.org/standard/core/Zeroless
+    ZERO_LT,
+
+    /// ( n -- flag ) flag is true if and only if n is greater than zero.
+    /// https://forth-standard.org/standard/core/Zeromore
+    ZERO_GT,
+
+    /// ( x -- flag ) flag is true if and only if x is not equal to zero.
+    /// https://forth-standard.org/standard/core/Zerone
+    ZERO_NE,
+
 }
 
 /// Translate tokens into VM operations
