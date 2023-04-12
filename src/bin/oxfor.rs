@@ -64,10 +64,10 @@ fn main() {
         stdout().flush().unwrap();
         let parse_result = parse(&mut vm);
         if let Err(ref err) = parse_result {
-            print!("error: {} ; ", err.msg);
+            println!("error: {}", err.msg);
             stdout().flush().unwrap();
         } else {
-            print!("ok: {} stack items, {} operations\n", vm.data_stack.len(), vm.operation_stack.len());
+            println!("ok: {} stack items, {} operations", vm.data_stack.len(), vm.operation_stack.len());
         }
         println!("\tdata stack:");
         for data in vm.data_stack.iter() {
@@ -78,17 +78,20 @@ fn main() {
             println!("\t\t{:?}", operation);
         }
         if parse_result.is_err() {
+            println!("");
             continue;
         }
 
         // Apply the operations against the VM
-        print!("> execute ");
+        println!("> output:");
         let apply_result = execute(&mut vm);
+        stdout().flush().unwrap();
+        print!("> execute ");
         if let Err(err) = apply_result {
-            print!("error: {}\n\n", err.msg);
+            println!("error: {}", err.msg);
             stdout().flush().unwrap();
         } else {
-            println!("ok\n");
+            println!("ok");
         }
         println!("\tdata stack:");
         for data in vm.data_stack.iter() {
@@ -98,6 +101,7 @@ fn main() {
         for operation in vm.operation_stack.iter() {
             println!("\t\t{:?}", operation);
         }
+        println!("");
         stdout().flush().unwrap();
 
     }
