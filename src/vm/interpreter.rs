@@ -167,8 +167,8 @@ mod tests {
         assert!(execute(&mut vm).is_err());
 
         // case:  takes the absolute value of the stop stack item
-        single_value_op_test_case(vm, 42, Operation::ABS, 42);
-        single_value_op_test_case(vm, -42, Operation::ABS, 42);
+        single_value_op_test_case!(vm, 42, Operation::ABS, 42);
+        single_value_op_test_case!(vm, -42, Operation::ABS, 42);
 
     }
 
