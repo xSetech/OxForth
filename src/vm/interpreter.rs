@@ -105,6 +105,37 @@ mod tests {
 
     use super::super::DataType;
 
+    /// Helper macro to test operations that take and return a single value.
+    macro_rules! single_value_op_test_case {
+        ($vm:expr, $value:expr, $operation:expr, $expected:expr) => {{
+            $vm.data_stack = vec![
+                Data {
+                    value: String::from("bottom of stack - should be ignored"),
+                    data_type: DataType::STRING,
+                },
+                Data {
+                    value: String::from($value.to_string()),
+                    data_type: DataType::NUMBER,
+                },
+            ];
+            $vm.operation_stack = vec![$operation];
+            assert!(execute(&mut $vm).is_ok());
+            assert_eq!(
+                $vm.data_stack,
+                vec![
+                    Data {
+                        value: String::from("bottom of stack - should be ignored"),
+                        data_type: DataType::STRING,
+                    },
+                    Data {
+                        value: String::from($expected.to_string()),
+                        data_type: DataType::NUMBER,
+                    }
+                ]
+            );
+        }};
+    }
+
     #[test]
     fn base_interpret_test() {
         let mut vm: VM = VM::default();
@@ -136,31 +167,8 @@ mod tests {
         assert!(execute(&mut vm).is_err());
 
         // case:  takes the absolute value of the stop stack item
-        vm.data_stack = vec![
-            Data {
-                value: String::from("item1"),
-                data_type: DataType::STRING,
-            },
-            Data {
-                value: String::from("-42"),  // <- top of stack
-                data_type: DataType::NUMBER,
-            },
-        ];
-        vm.operation_stack = vec![Operation::ABS];
-        assert!(execute(&mut vm).is_ok());
-        assert_eq!(
-            vm.data_stack,
-            vec![
-                Data {
-                    value: String::from("item1"),
-                    data_type: DataType::STRING,
-                },
-                Data {
-                    value: String::from("42"),
-                    data_type: DataType::NUMBER,
-                },
-            ]
-        );
+        single_value_op_test_case(vm, 42, Operation::ABS, 42);
+        single_value_op_test_case(vm, -42, Operation::ABS, 42);
 
     }
 
@@ -286,149 +294,21 @@ mod tests {
         assert_eq!(vm.data_stack.len(), 1);
 
         // case:  normal comparisons
-        vm.data_stack = vec![
-            Data {
-                value: String::from("1"),
-                data_type: DataType::NUMBER,
-            },
-        ];
-        vm.operation_stack = vec![Operation::ZERO_EQ];
-        assert!(execute(&mut vm).is_ok());
-        assert_eq!(
-            vm.data_stack,
-            vec![
-                Data {
-                    value: String::from("0"),
-                    data_type: DataType::NUMBER,
-                }
-            ]
-        );
+        single_value_op_test_case!(vm, 1, Operation::ZERO_EQ, 0);
+        single_value_op_test_case!(vm, 0, Operation::ZERO_EQ, 1);
+        single_value_op_test_case!(vm, -1, Operation::ZERO_EQ, 0);
 
-        vm.data_stack = vec![
-            Data {
-                value: String::from("0"),
-                data_type: DataType::NUMBER,
-            },
-        ];
-        vm.operation_stack = vec![Operation::ZERO_EQ];
-        assert!(execute(&mut vm).is_ok());
-        assert_eq!(
-            vm.data_stack,
-            vec![
-                Data {
-                    value: String::from("1"),
-                    data_type: DataType::NUMBER,
-                }
-            ]
-        );
+        single_value_op_test_case!(vm, 1, Operation::ZERO_GT, 1);
+        single_value_op_test_case!(vm, 0, Operation::ZERO_GT, 0);
+        single_value_op_test_case!(vm, -1, Operation::ZERO_GT, 0);
 
-        vm.data_stack = vec![
-            Data {
-                value: String::from("1"),
-                data_type: DataType::NUMBER,
-            },
-        ];
-        vm.operation_stack = vec![Operation::ZERO_GT];
-        assert!(execute(&mut vm).is_ok());
-        assert_eq!(
-            vm.data_stack,
-            vec![
-                Data {
-                    value: String::from("1"),
-                    data_type: DataType::NUMBER,
-                }
-            ]
-        );
+        single_value_op_test_case!(vm, 1, Operation::ZERO_LT, 0);
+        single_value_op_test_case!(vm, 0, Operation::ZERO_LT, 0);
+        single_value_op_test_case!(vm, -1, Operation::ZERO_LT, 1);
 
-        vm.data_stack = vec![
-            Data {
-                value: String::from("-1"),
-                data_type: DataType::NUMBER,
-            },
-        ];
-        vm.operation_stack = vec![Operation::ZERO_GT];
-        assert!(execute(&mut vm).is_ok());
-        assert_eq!(
-            vm.data_stack,
-            vec![
-                Data {
-                    value: String::from("0"),
-                    data_type: DataType::NUMBER,
-                }
-            ]
-        );
-
-        vm.data_stack = vec![
-            Data {
-                value: String::from("1"),
-                data_type: DataType::NUMBER,
-            },
-        ];
-        vm.operation_stack = vec![Operation::ZERO_LT];
-        assert!(execute(&mut vm).is_ok());
-        assert_eq!(
-            vm.data_stack,
-            vec![
-                Data {
-                    value: String::from("0"),
-                    data_type: DataType::NUMBER,
-                }
-            ]
-        );
-
-        vm.data_stack = vec![
-            Data {
-                value: String::from("-1"),
-                data_type: DataType::NUMBER,
-            },
-        ];
-        vm.operation_stack = vec![Operation::ZERO_LT];
-        assert!(execute(&mut vm).is_ok());
-        assert_eq!(
-            vm.data_stack,
-            vec![
-                Data {
-                    value: String::from("1"),
-                    data_type: DataType::NUMBER,
-                }
-            ]
-        );
-
-        vm.data_stack = vec![
-            Data {
-                value: String::from("1"),
-                data_type: DataType::NUMBER,
-            },
-        ];
-        vm.operation_stack = vec![Operation::ZERO_NE];
-        assert!(execute(&mut vm).is_ok());
-        assert_eq!(
-            vm.data_stack,
-            vec![
-                Data {
-                    value: String::from("1"),
-                    data_type: DataType::NUMBER,
-                }
-            ]
-        );
-
-        vm.data_stack = vec![
-            Data {
-                value: String::from("0"),
-                data_type: DataType::NUMBER,
-            },
-        ];
-        vm.operation_stack = vec![Operation::ZERO_NE];
-        assert!(execute(&mut vm).is_ok());
-        assert_eq!(
-            vm.data_stack,
-            vec![
-                Data {
-                    value: String::from("0"),
-                    data_type: DataType::NUMBER,
-                }
-            ]
-        );
+        single_value_op_test_case!(vm, 1, Operation::ZERO_NE, 1);
+        single_value_op_test_case!(vm, 0, Operation::ZERO_NE, 0);
+        single_value_op_test_case!(vm, -1, Operation::ZERO_NE, 1);
 
     }
 
