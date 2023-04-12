@@ -4,11 +4,11 @@ use super::CompilerError;
 
 use super::scanner::Symbol;
 
-use super::super::vm::VM;
+use super::super::vm::{Data, DataType, VM};
 
 /// Operations change VM state (e.g. dictionary, stacks, etc).
 #[allow(non_camel_case_types)]
-#[derive(PartialEq, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Operation {
 
     /// Non-operation
@@ -26,15 +26,17 @@ pub fn parse(vm: &mut VM) -> Result<(), CompilerError> {
         match token.symbol {
 
             Symbol::NUMBER => {
-                vm.operation_stack.push(
-                    Operation::NOP,
+                vm.data_stack.push(
+                    Data {
+                        value: String::from(token.token),
+                        data_type: DataType::NUMBER,
+                    }
                 );
             },
 
             Symbol::WORD => {
-                vm.operation_stack.push(
-                    Operation::NOP,
-                );
+                let word_ops: Vec<Operation> = vm.dictionary.get(token.token.as_str()).unwrap().to_vec();
+                vm.operation_stack.extend(word_ops);
             },
 
             Symbol::UNDEFINED => {
@@ -59,10 +61,8 @@ mod tests {
     use super::super::scanner::Token;
 
     #[test]
-    fn base_parse_test() {
-
+    fn parser_test_numbers() {
         let mut vm: VM = VM::default();
-
         vm.token_stack = vec![
             Token {
                 token: String::from("1"),
@@ -77,17 +77,62 @@ mod tests {
                 symbol: Symbol::NUMBER,
             },
         ];
-
         assert!(parse(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("3"),
+                    data_type: DataType::NUMBER,
+                },
+                Data {
+                    value: String::from("2"),
+                    data_type: DataType::NUMBER,
+                },
+                Data {
+                    value: String::from("1"),
+                    data_type: DataType::NUMBER,
+                },
+
+            ]
+        );
+    }
+
+    #[test]
+    fn parser_test_words() {
+        let mut vm: VM = VM::default();
+        vm.dictionary.insert(
+            "NOP_INC",
+            vec![
+                Operation::NOP_INC,
+            ],
+        );
+        vm.token_stack = vec![
+            Token {
+                token: String::from("1"),
+                symbol: Symbol::NUMBER,
+            },
+            Token {
+                token: String::from("NOP_INC"),
+                symbol: Symbol::WORD,
+            },
+        ];
+        assert!(parse(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("1"),
+                    data_type: DataType::NUMBER,
+                },
+            ]
+        );
         assert_eq!(
             vm.operation_stack,
             vec![
-                Operation::NOP,
-                Operation::NOP,
-                Operation::NOP,
+                Operation::NOP_INC,
             ]
         );
-
     }
 
 }

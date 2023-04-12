@@ -10,12 +10,14 @@ pub mod interpreter;
 /// Data on the data stack is a collection of bytes representing these types.
 /// Casting to different types is done as needed depending on the executing word
 /// and whether it's even possible.
+#[derive(Debug, PartialEq)]
 pub enum DataType {
     STRING,
     NUMBER,
 }
 
 /// Data that can be found on the "data stack"
+#[derive(Debug, PartialEq)]
 pub struct Data {
     pub value: String,
     pub data_type: DataType,
@@ -68,6 +70,9 @@ impl<'vm> VM<'vm> {
 mod tests {
     use super::*;
 
+    use super::super::compiler::scanner::scan;
+    use super::super::compiler::parser::parse;
+
     #[test]
     fn vm_test_dictionary() {
         let mut vm: VM = VM::default();
@@ -77,6 +82,22 @@ mod tests {
                 Operation::NOP,
             ],
         );
+    }
+
+    #[test]
+    fn vm_test_defining_words() {
+        let mut vm: VM = VM::default();
+        vm.dictionary.insert(
+            "NOP_INC",
+            vec![
+                Operation::NOP_INC,
+            ],
+        );
+        assert_eq!(vm._ops_applied, 0);
+        assert!(scan("NOP_INC\n", &mut vm).is_ok());
+        assert!(parse(&mut vm).is_ok());
+        assert!(interpreter::execute(&mut vm).is_ok());
+        assert_eq!(vm._ops_applied, 1);
     }
 
 }
