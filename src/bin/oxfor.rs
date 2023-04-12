@@ -30,7 +30,7 @@ fn main() {
     println!("");
 
     let mut vm = VM::default();
-    vm.define_words__implementation();
+    vm.define_core_words();
 
     stdout().flush().unwrap();
 
