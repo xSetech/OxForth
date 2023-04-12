@@ -69,6 +69,13 @@ impl<'vm> VM<'vm> {
             ],
         );
 
+        self.dictionary.insert(
+            "DROP",
+            vec![
+                Operation::DROP,
+            ],
+        );
+
     }
 
 }

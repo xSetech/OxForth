@@ -21,6 +21,10 @@ pub enum Operation {
     /// https://forth-standard.org/standard/tools/BYE
     BYE,
 
+    /// ( x -- ) Remove x from the stack.
+    /// https://forth-standard.org/standard/core/DROP
+    DROP,
+
 }
 
 /// Translate tokens into VM operations
