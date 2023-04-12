@@ -68,7 +68,11 @@ impl<'vm> VM<'vm> {
 
         define_single_op_word!("NOP", Operation::NOP);
         define_single_op_word!("ABS", Operation::ABS);
-        define_single_op_word!("BYE", Operation::NOP);
+        define_single_op_word!("=", Operation::CMP_EQ);
+        define_single_op_word!("<", Operation::CMP_LT);
+        define_single_op_word!(">", Operation::CMP_GT);
+        define_single_op_word!("<>", Operation::CMP_NE);
+        define_single_op_word!("BYE", Operation::BYE);
         define_single_op_word!("DROP", Operation::DROP);
         define_single_op_word!("DUP", Operation::DUP);
         define_single_op_word!("0=", Operation::ZERO_EQ);
