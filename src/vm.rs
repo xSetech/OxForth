@@ -63,6 +63,13 @@ impl<'vm> VM<'vm> {
         );
 
         self.dictionary.insert(
+            "ABS",
+            vec![
+                Operation::ABS,
+            ],
+        );
+
+        self.dictionary.insert(
             "BYE",
             vec![
                 Operation::BYE,

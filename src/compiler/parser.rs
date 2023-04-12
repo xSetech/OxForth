@@ -17,6 +17,10 @@ pub enum Operation {
     /// Non-operation, but VM operations applied count increments
     NOP_INC,
 
+    /// ( n -- u ) u is the absolute value of n.
+    /// https://forth-standard.org/standard/core/ABS
+    ABS,
+
     /// "Return control to the host operating system"
     /// https://forth-standard.org/standard/tools/BYE
     BYE,

@@ -2,7 +2,7 @@
 
 use std::process;
 
-use super::{Data, VM};
+use super::{Data, DataType, VM};
 use super::VirtualMachineError;
 
 use super::super::compiler::parser::Operation;
@@ -18,6 +18,27 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
             Operation::NOP_INC => (),
 
             // Core words that happen to be VM operations, in alphabetical order.
+            Operation::ABS => {
+                let o: Option<&mut Data> = vm.data_stack.last_mut();
+                if o.is_none() {
+                    return Result::Err(
+                        VirtualMachineError {
+                            msg: String::from("stack underflow"),
+                        }
+                    );
+                }
+                let d: &mut Data = o.unwrap();
+                if d.data_type != DataType::NUMBER {
+                    return Result::Err(
+                        VirtualMachineError {
+                            msg: String::from("refusing cast: string->number"),
+                        }
+                    );
+                }
+                let n: i64 = d.value.parse::<i64>().unwrap();
+                let u: i64 = n.abs();
+                d.value = u.to_string();
+            },
             Operation::BYE => {
                 println!("It's time to say goodbye~");
                 process::exit(0);
@@ -71,10 +92,58 @@ mod tests {
     }
 
     #[test]
+    fn operation_test__abs() {
+        let mut vm: VM = VM::default();
+
+        // case:  stack underflow error on empty stack
+        assert!(vm.data_stack.is_empty());
+        vm.operation_stack.push(Operation::ABS);
+        assert!(execute(&mut vm).is_err());
+
+        // case:  refuses to cast a string -> int
+        vm.data_stack = vec![
+            Data {
+                value: String::from("item1"),
+                data_type: DataType::STRING,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ABS];
+        assert!(execute(&mut vm).is_err());
+
+        // case:  takes the absolute value of the stop stack item
+        vm.data_stack = vec![
+            Data {
+                value: String::from("item1"),
+                data_type: DataType::STRING,
+            },
+            Data {
+                value: String::from("-42"),  // <- top of stack
+                data_type: DataType::NUMBER,
+            },
+        ];
+        vm.operation_stack = vec![Operation::ABS];
+        assert!(execute(&mut vm).is_ok());
+        assert_eq!(
+            vm.data_stack,
+            vec![
+                Data {
+                    value: String::from("item1"),
+                    data_type: DataType::STRING,
+                },
+                Data {
+                    value: String::from("42"),
+                    data_type: DataType::NUMBER,
+                },
+            ]
+        );
+
+    }
+
+    #[test]
     fn operation_test__drop() {
         let mut vm: VM = VM::default();
 
-        // case:  stack underflow error on empty stack w/ drop
+        // case:  stack underflow error on empty stack
         assert!(vm.data_stack.is_empty());
         vm.operation_stack.push(Operation::DROP);
         assert!(execute(&mut vm).is_err());
@@ -108,12 +177,12 @@ mod tests {
     fn operation_test__dup() {
         let mut vm: VM = VM::default();
 
-        // case:  stack underflow error on empty stack w/ drop
+        // case:  stack underflow error on empty stack
         assert!(vm.data_stack.is_empty());
         vm.operation_stack.push(Operation::DUP);
         assert!(execute(&mut vm).is_err());
 
-        // case:  drop removes a single stack item from the top
+        // case:  duplicates the top stack entry
         vm.data_stack = vec![
             Data {
                 value: String::from("item1"),
