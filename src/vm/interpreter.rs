@@ -1,5 +1,6 @@
 //! Interpretation
 
+use std::cmp;
 use std::process;
 
 use super::{Data, DataType, VM};
@@ -69,6 +70,16 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                 let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
                 d.value = n.abs().to_string();
             },
+            Operation::ADD => {
+                let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
+                let n3: i64 = n1 + n2;
+                vm.data_stack.push(
+                    Data {
+                        value: n3.to_string(),
+                        data_type: DataType::NUMBER,
+                    }
+                );
+            },
             Operation::BYE => {
                 println!("It's time to say goodbye~");
                 process::exit(0);
@@ -113,6 +124,23 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                     }
                 );
             },
+            Operation::DIV => {
+                let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
+                if n2 == 0 {
+                    return Result::Err(
+                        VirtualMachineError {
+                            msg: String::from("divisor cannot be zero"),
+                        }
+                    );
+                }
+                let n3: i64 = n1 / n2; // no floating-point yet
+                vm.data_stack.push(
+                    Data {
+                        value: n3.to_string(),
+                        data_type: DataType::NUMBER,
+                    }
+                );
+            },
             Operation::DROP => {
                 let x: Option<Data> = vm.data_stack.pop();
                 if x.is_none() {
@@ -135,7 +163,68 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                 let x: &Data = x.unwrap();
                 let x2: Data = x.clone();
                 vm.data_stack.push(x2);
-            }
+            },
+            Operation::MAX => {
+                let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
+                let n3: i64 = cmp::max(n1, n2);
+                vm.data_stack.push(
+                    Data {
+                        value: n3.to_string(),
+                        data_type: DataType::NUMBER,
+                    }
+                );
+            },
+            Operation::MIN => {
+                let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
+                let n3: i64 = cmp::min(n1, n2);
+                vm.data_stack.push(
+                    Data {
+                        value: n3.to_string(),
+                        data_type: DataType::NUMBER,
+                    }
+                );
+            },
+            Operation::MOD => {
+                let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
+                if n2 == 0 {
+                    return Result::Err(
+                        VirtualMachineError {
+                            msg: String::from("divisor cannot be zero"),
+                        }
+                    );
+                }
+                let n3: i64 = n1.rem_euclid(n2);
+                vm.data_stack.push(
+                    Data {
+                        value: n3.to_string(),
+                        data_type: DataType::NUMBER,
+                    }
+                );
+            },
+            Operation::MUL => {
+                let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
+                let n3: i64 = n1 * n2;
+                vm.data_stack.push(
+                    Data {
+                        value: n3.to_string(),
+                        data_type: DataType::NUMBER,
+                    }
+                );
+            },
+            Operation::NEGATE => {
+                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                d.value = (n * -1).to_string();
+            },
+            Operation::SUB => {
+                let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
+                let n3: i64 = n1 - n2;
+                vm.data_stack.push(
+                    Data {
+                        value: n3.to_string(),
+                        data_type: DataType::NUMBER,
+                    }
+                );
+            },
             Operation::ZERO_EQ => {
                 let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
                 let flag: bool = n == 0;
@@ -155,7 +244,7 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                 let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
                 let flag: bool = n != 0;
                 d.value = (flag as i64).to_string();
-            }
+            },
 
         }
         vm._ops_applied += 1;
@@ -258,11 +347,12 @@ mod tests {
     }
 
     #[test]
-    fn operation_test__abs() {
+    fn operation_test__single_value_ops() {
         let mut vm: VM = VM::default();
 
         // case:  stack underflow error on empty stack
         empty_stack_test_case!(vm, Operation::ABS);
+        empty_stack_test_case!(vm, Operation::NEGATE);
 
         // case:  refuses to cast a string -> int
         vm.data_stack = vec![
@@ -274,9 +364,74 @@ mod tests {
         vm.operation_stack = vec![Operation::ABS];
         assert!(execute(&mut vm).is_err());
 
-        // case:  takes the absolute value of the stop stack item
+        vm.data_stack = vec![
+            Data {
+                value: String::from("item1"),
+                data_type: DataType::STRING,
+            },
+        ];
+        vm.operation_stack = vec![Operation::NEGATE];
+        assert!(execute(&mut vm).is_err());
+
         single_value_op_test_case!(vm, 42, Operation::ABS, 42);
         single_value_op_test_case!(vm, -42, Operation::ABS, 42);
+
+        single_value_op_test_case!(vm,  0, Operation::NEGATE,  0);
+        single_value_op_test_case!(vm,  1, Operation::NEGATE, -1);
+        single_value_op_test_case!(vm, -1, Operation::NEGATE,  1);
+
+    }
+
+    #[test]
+    fn operation_test__arithmetic() {
+        let mut vm: VM = VM::default();
+
+        empty_stack_test_case!(vm, Operation::ADD);
+        empty_stack_test_case!(vm, Operation::SUB);
+        empty_stack_test_case!(vm, Operation::MUL);
+        empty_stack_test_case!(vm, Operation::DIV);
+        empty_stack_test_case!(vm, Operation::MOD);
+
+        two_in_one_out_op_test_case!(vm,  0,  0, Operation::ADD,  0);
+        two_in_one_out_op_test_case!(vm,  0,  1, Operation::ADD,  1);
+        two_in_one_out_op_test_case!(vm,  1,  0, Operation::ADD,  1);
+        two_in_one_out_op_test_case!(vm,  1,  1, Operation::ADD,  2);
+        two_in_one_out_op_test_case!(vm,  0, -1, Operation::ADD, -1);
+        two_in_one_out_op_test_case!(vm, -1,  0, Operation::ADD, -1);
+        two_in_one_out_op_test_case!(vm, -1, -1, Operation::ADD, -2);
+
+        two_in_one_out_op_test_case!(vm,  0,  0, Operation::SUB,  0);
+        two_in_one_out_op_test_case!(vm,  0,  1, Operation::SUB, -1);
+        two_in_one_out_op_test_case!(vm,  1,  0, Operation::SUB,  1);
+        two_in_one_out_op_test_case!(vm,  1,  1, Operation::SUB,  0);
+        two_in_one_out_op_test_case!(vm,  0, -1, Operation::SUB,  1);
+        two_in_one_out_op_test_case!(vm, -1,  0, Operation::SUB, -1);
+        two_in_one_out_op_test_case!(vm, -1, -1, Operation::SUB,  0);
+
+        two_in_one_out_op_test_case!(vm,  0,  0, Operation::MUL,  0);
+        two_in_one_out_op_test_case!(vm,  0,  1, Operation::MUL,  0);
+        two_in_one_out_op_test_case!(vm,  1,  0, Operation::MUL,  0);
+        two_in_one_out_op_test_case!(vm,  1,  1, Operation::MUL,  1);
+        two_in_one_out_op_test_case!(vm,  0, -1, Operation::MUL,  0);
+        two_in_one_out_op_test_case!(vm, -1,  0, Operation::MUL,  0);
+        two_in_one_out_op_test_case!(vm, -1, -1, Operation::MUL,  1);
+        two_in_one_out_op_test_case!(vm,  1, -1, Operation::MUL, -1);
+        two_in_one_out_op_test_case!(vm, -1,  1, Operation::MUL, -1);
+
+        two_in_one_out_op_test_case!(vm,  0,  1, Operation::DIV,  0);
+        two_in_one_out_op_test_case!(vm,  1,  1, Operation::DIV,  1);
+        two_in_one_out_op_test_case!(vm,  0, -1, Operation::DIV,  0);
+        two_in_one_out_op_test_case!(vm, -1, -1, Operation::DIV,  1);
+        two_in_one_out_op_test_case!(vm,  1, -1, Operation::DIV, -1);
+        two_in_one_out_op_test_case!(vm, -1,  1, Operation::DIV, -1);
+
+        two_in_one_out_op_test_case!(vm,  0,  1, Operation::MOD,  0);
+        two_in_one_out_op_test_case!(vm,  1,  1, Operation::MOD,  0);
+        two_in_one_out_op_test_case!(vm,  2,  1, Operation::MOD,  0);
+        two_in_one_out_op_test_case!(vm,  1,  2, Operation::MOD,  1);
+        two_in_one_out_op_test_case!(vm, -1, -2, Operation::MOD,  1);
+        two_in_one_out_op_test_case!(vm,  1, -2, Operation::MOD,  1);
+        two_in_one_out_op_test_case!(vm, -1,  2, Operation::MOD,  1);
 
     }
 
@@ -288,6 +443,8 @@ mod tests {
         empty_stack_test_case!(vm, Operation::CMP_GT);
         empty_stack_test_case!(vm, Operation::CMP_LT);
         empty_stack_test_case!(vm, Operation::CMP_NE);
+        empty_stack_test_case!(vm, Operation::MAX);
+        empty_stack_test_case!(vm, Operation::MIN);
 
         two_in_one_out_op_test_case!(vm,  1,  1, Operation::CMP_EQ,  1);
         two_in_one_out_op_test_case!(vm,  1,  0, Operation::CMP_EQ,  0);
@@ -316,6 +473,20 @@ mod tests {
         two_in_one_out_op_test_case!(vm, -1, -1, Operation::CMP_NE,  0);
         two_in_one_out_op_test_case!(vm,  0, -1, Operation::CMP_NE,  1);
         two_in_one_out_op_test_case!(vm, -1,  0, Operation::CMP_NE,  1);
+
+        two_in_one_out_op_test_case!(vm,  0,  0, Operation::MAX,  0);
+        two_in_one_out_op_test_case!(vm,  1,  0, Operation::MAX,  1);
+        two_in_one_out_op_test_case!(vm,  0,  1, Operation::MAX,  1);
+        two_in_one_out_op_test_case!(vm, -1, -1, Operation::MAX, -1);
+        two_in_one_out_op_test_case!(vm,  0, -1, Operation::MAX,  0);
+        two_in_one_out_op_test_case!(vm, -1,  0, Operation::MAX,  0);
+
+        two_in_one_out_op_test_case!(vm,  1,  1, Operation::MIN,  1);
+        two_in_one_out_op_test_case!(vm,  1,  0, Operation::MIN,  0);
+        two_in_one_out_op_test_case!(vm,  0,  1, Operation::MIN,  0);
+        two_in_one_out_op_test_case!(vm, -1, -1, Operation::MIN, -1);
+        two_in_one_out_op_test_case!(vm,  0, -1, Operation::MIN, -1);
+        two_in_one_out_op_test_case!(vm, -1,  0, Operation::MIN, -1);
 
     }
 

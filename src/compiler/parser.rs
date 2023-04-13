@@ -21,6 +21,10 @@ pub enum Operation {
     /// https://forth-standard.org/standard/core/ABS
     ABS,
 
+    /// ( n1 | u1 n2 | u2 -- n3 | u3 ) Add n2 | u2 to n1 | u1, giving the sum n3 | u3.
+    /// https://forth-standard.org/standard/core/Plus
+    ADD,
+
     /// "Return control to the host operating system"
     /// https://forth-standard.org/standard/tools/BYE
     BYE,
@@ -41,6 +45,11 @@ pub enum Operation {
     /// https://forth-standard.org/standard/core/ne
     CMP_NE,
 
+    /// ( n1 n2 -- n3 ) Divide n1 by n2, giving the single-cell quotient n3.
+    /// An ambiguous condition exists if n2 is zero.
+    /// https://forth-standard.org/standard/core/Div
+    DIV,
+
     /// ( x -- ) Remove x from the stack.
     /// https://forth-standard.org/standard/core/DROP
     DROP,
@@ -48,6 +57,31 @@ pub enum Operation {
     /// ( x -- x x ) Duplicate x.
     /// https://forth-standard.org/standard/core/DUP
     DUP,
+
+    /// ( n1 -- n2 ) Negate n1, giving its arithmetic inverse n2.
+    /// https://forth-standard.org/standard/core/NEGATE
+    NEGATE,
+
+    /// ( n1 n2 -- n3 ) n3 is the greater of n1 and n2.
+    /// https://forth-standard.org/standard/core/MAX
+    MAX,
+
+    /// ( n1 n2 -- n3 ) n3 is the lesser of n1 and n2.
+    /// https://forth-standard.org/standard/core/MIN
+    MIN,
+
+    /// ( n1 n2 -- n3 ) Divide n1 by n2, giving the single-cell "remainder" n3.
+    /// An ambiguous condition exists if n2 is zero.
+    /// https://forth-standard.org/standard/core/MOD
+    MOD,
+
+    /// ( n1 | u1 n2 | u2 -- n3 | u3 ) Multiply n1 | u1 by n2 | u2 giving the product n3 | u3.
+    /// https://forth-standard.org/standard/core/Times
+    MUL,
+
+    /// ( n1 | u1 n2 | u2 -- n3 | u3 ) Subtract n2 | u2 from n1 | u1, giving the difference n3 | u3.
+    /// https://forth-standard.org/standard/core/Minus
+    SUB,
 
     /// ( x -- flag ) flag is true if and only if x is equal to zero.
     /// https://forth-standard.org/standard/core/ZeroEqual
