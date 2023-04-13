@@ -1,5 +1,5 @@
 [package]
-name = "OxFor"
+name = "OxForth"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-only"
@@ -11,13 +11,13 @@ authors = [
 ]
 
 [lib]
-name = "oxfor"
+name = "oxforth"
 path = "src/lib.rs"
 crate-type = ["rlib", "dylib"]
 
 [[bin]]
-name = "oxfor"
-path = "src/bin/oxfor.rs"
+name = "oxforth"
+path = "src/bin/oxforth.rs"
 
 [profile.dev]  # note: profile.debug is reserved
 debug = true

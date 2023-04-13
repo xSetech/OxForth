@@ -13,19 +13,19 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-//! OxFor - binary entry point
+//! OxForth - binary entry point
 
 use std::io::{stdin, stdout, Write};
 
-use oxfor::compiler::scanner::scan;
-use oxfor::compiler::parser::parse;
-use oxfor::vm::interpreter::execute;
-use oxfor::vm::VM;
+use oxforth::compiler::scanner::scan;
+use oxforth::compiler::parser::parse;
+use oxforth::vm::interpreter::execute;
+use oxforth::vm::VM;
 
 /// Entry point
 fn main() {
 
-    println!("OxFor 0.1.0 - https://github.com/xSetech/OxFor");
+    println!("OxForth 0.1.0 - https://github.com/xSetech/OxForth");
     println!("Ctrl-C to exit");
     println!("");
 

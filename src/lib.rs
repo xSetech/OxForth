@@ -13,7 +13,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-//! OxFor - library
+//! OxForth - library
 
 pub mod compiler;
 pub mod misc;
