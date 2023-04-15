@@ -1,6 +1,6 @@
 //! Virtual Machine
 
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 use super::compiler::scanner::Token;
 use super::compiler::parser::Operation;
@@ -32,13 +32,13 @@ pub struct VM<'vm> {
     /// Words are mapped to an ordered collection of VM operations
     pub dictionary: HashMap<&'vm str, Vec<Operation>>,
 
-    /// Stack:  Tokens found by scanning the parse area
-    pub token_stack: Vec<Token>,
+    /// Tokens found by scanning the input buffer ("parse area").
+    pub tokens: VecDeque<Token>,
 
-    /// Stack:  Operations to perform on the VM and its stacks
-    pub operation_stack: Vec<Operation>,
+    /// Tokens are parsed into Operations that manipulate the data stack and VM.
+    pub operations: VecDeque<Operation>,
 
-    /// Stack:  The stack used by operations
+    /// The general stack ("data stack")
     pub data_stack: Vec<Data>,
 
 }

@@ -54,8 +54,8 @@ fn main() {
             stdout().flush().unwrap();
             continue
         }
-        print!("ok: {} tokens\n", vm.token_stack.len());
-        for token in vm.token_stack.iter() {
+        print!("ok: {} tokens\n", vm.tokens.len());
+        for token in vm.tokens.iter() {
             print!("\t{:?}\n", token);
         }
 
@@ -67,14 +67,14 @@ fn main() {
             println!("error: {}", err.msg);
             stdout().flush().unwrap();
         } else {
-            println!("ok: {} stack items, {} operations", vm.data_stack.len(), vm.operation_stack.len());
+            println!("ok: {} stack items, {} operations", vm.data_stack.len(), vm.operations.len());
         }
         println!("\tdata stack:");
         for data in vm.data_stack.iter() {
             println!("\t\t{:?}", data);
         }
         println!("\toperation stack:");
-        for operation in vm.operation_stack.iter() {
+        for operation in vm.operations.iter() {
             println!("\t\t{:?}", operation);
         }
         if parse_result.is_err() {
@@ -98,7 +98,7 @@ fn main() {
             println!("\t\t{:?}", data);
         }
         println!("\toperation stack:");
-        for operation in vm.operation_stack.iter() {
+        for operation in vm.operations.iter() {
             println!("\t\t{:?}", operation);
         }
         println!("");

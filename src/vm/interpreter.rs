@@ -56,7 +56,7 @@ fn two_ints_from_stack<'vm>(vm: &'vm mut VM) -> Result<(i64, i64), VirtualMachin
 }
 
 pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
-    while let Some(operation) = vm.operation_stack.pop() {
+    while let Some(operation) = vm.operations.pop_front() {
         match operation {
 
             // Non-operational / internal test ops
@@ -257,6 +257,8 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
 mod tests {
     use super::*;
 
+    use std::collections::VecDeque;
+
     use super::super::DataType;
 
     /// Helper macro to confirm operations that require data on the stack produce an
@@ -264,7 +266,7 @@ mod tests {
     macro_rules! empty_stack_test_case {
         ($vm:expr, $operation:expr) => {{
             assert!($vm.data_stack.is_empty());
-            $vm.operation_stack.push($operation);
+            $vm.operations.push_back($operation);
             assert!(execute(&mut $vm).is_err());
         }};
     }
@@ -282,7 +284,7 @@ mod tests {
                     data_type: DataType::NUMBER,
                 },
             ];
-            $vm.operation_stack = vec![$operation];
+            $vm.operations = VecDeque::from([$operation]);
             assert!(execute(&mut $vm).is_ok());
             assert_eq!(
                 $vm.data_stack,
@@ -317,7 +319,7 @@ mod tests {
                     data_type: DataType::NUMBER,
                 },
             ];
-            $vm.operation_stack = vec![$operation];
+            $vm.operations = VecDeque::from([$operation]);
             assert!(execute(&mut $vm).is_ok());
             assert_eq!(
                 $vm.data_stack,
@@ -338,8 +340,8 @@ mod tests {
     #[test]
     fn base_interpret_test() {
         let mut vm: VM = VM::default();
-        vm.operation_stack.push(Operation::NOP);
-        vm.operation_stack.push(Operation::NOP);
+        vm.operations.push_back(Operation::NOP);
+        vm.operations.push_back(Operation::NOP);
         assert_eq!(
             execute(&mut vm).unwrap(),
             (),
@@ -361,7 +363,7 @@ mod tests {
                 data_type: DataType::STRING,
             },
         ];
-        vm.operation_stack = vec![Operation::ABS];
+        vm.operations = VecDeque::from([Operation::ABS]);
         assert!(execute(&mut vm).is_err());
 
         vm.data_stack = vec![
@@ -370,7 +372,7 @@ mod tests {
                 data_type: DataType::STRING,
             },
         ];
-        vm.operation_stack = vec![Operation::NEGATE];
+        vm.operations = VecDeque::from([Operation::NEGATE]);
         assert!(execute(&mut vm).is_err());
 
         single_value_op_test_case!(vm, 42, Operation::ABS, 42);
@@ -508,7 +510,7 @@ mod tests {
                 data_type: DataType::STRING,
             },
         ];
-        vm.operation_stack = vec![Operation::DROP];
+        vm.operations = VecDeque::from([Operation::DROP]);
         assert!(execute(&mut vm).is_ok());
         assert_eq!(
             vm.data_stack,
@@ -540,7 +542,7 @@ mod tests {
                 data_type: DataType::STRING,
             },
         ];
-        vm.operation_stack = vec![Operation::DUP];
+        vm.operations = VecDeque::from([Operation::DUP]);
         assert!(execute(&mut vm).is_ok());
         assert_eq!(
             vm.data_stack,
@@ -580,19 +582,19 @@ mod tests {
             },
         ];
 
-        vm.operation_stack = vec![Operation::ZERO_EQ];
+        vm.operations = VecDeque::from([Operation::ZERO_EQ]);
         assert!(execute(&mut vm).is_err());
         assert_eq!(vm.data_stack.len(), 1);
 
-        vm.operation_stack = vec![Operation::ZERO_GT];
+        vm.operations = VecDeque::from([Operation::ZERO_GT]);
         assert!(execute(&mut vm).is_err());
         assert_eq!(vm.data_stack.len(), 1);
 
-        vm.operation_stack = vec![Operation::ZERO_LT];
+        vm.operations = VecDeque::from([Operation::ZERO_LT]);
         assert!(execute(&mut vm).is_err());
         assert_eq!(vm.data_stack.len(), 1);
 
-        vm.operation_stack = vec![Operation::ZERO_NE];
+        vm.operations = VecDeque::from([Operation::ZERO_NE]);
         assert!(execute(&mut vm).is_err());
         assert_eq!(vm.data_stack.len(), 1);
 

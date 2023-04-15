@@ -104,7 +104,7 @@ pub enum Operation {
 /// Translate tokens into VM operations
 pub fn parse(vm: &mut VM) -> Result<(), CompilerError> {
 
-    while let Some(token) = vm.token_stack.pop() {
+    while let Some(token) = vm.tokens.pop_front() {
         match token.symbol {
 
             Symbol::NUMBER => {
@@ -118,11 +118,11 @@ pub fn parse(vm: &mut VM) -> Result<(), CompilerError> {
 
             Symbol::WORD => {
                 let word_ops: Vec<Operation> = vm.dictionary.get(token.token.as_str()).unwrap().to_vec();
-                vm.operation_stack.extend(word_ops);
+                vm.operations.extend(word_ops);
             },
 
             Symbol::UNDEFINED => {
-                vm.token_stack.clear();
+                vm.tokens.clear();
                 return Result::Err(
                     CompilerError {
                         msg: String::from(format!("undefined word: {:?}", token)),
@@ -140,12 +140,14 @@ pub fn parse(vm: &mut VM) -> Result<(), CompilerError> {
 mod tests {
     use super::*;
 
+    use std::collections::VecDeque;
+
     use super::super::scanner::Token;
 
     #[test]
     fn parser_test_numbers() {
         let mut vm: VM = VM::default();
-        vm.token_stack = vec![
+        vm.tokens = VecDeque::from([
             Token {
                 token: String::from("1"),
                 symbol: Symbol::NUMBER,
@@ -158,13 +160,13 @@ mod tests {
                 token: String::from("3"),
                 symbol: Symbol::NUMBER,
             },
-        ];
+        ]);
         assert!(parse(&mut vm).is_ok());
         assert_eq!(
             vm.data_stack,
             vec![
                 Data {
-                    value: String::from("3"),
+                    value: String::from("1"),
                     data_type: DataType::NUMBER,
                 },
                 Data {
@@ -172,10 +174,9 @@ mod tests {
                     data_type: DataType::NUMBER,
                 },
                 Data {
-                    value: String::from("1"),
+                    value: String::from("3"),
                     data_type: DataType::NUMBER,
                 },
-
             ]
         );
     }
@@ -189,7 +190,7 @@ mod tests {
                 Operation::NOP_INC,
             ],
         );
-        vm.token_stack = vec![
+        vm.tokens = VecDeque::from([
             Token {
                 token: String::from("1"),
                 symbol: Symbol::NUMBER,
@@ -198,7 +199,7 @@ mod tests {
                 token: String::from("NOP_INC"),
                 symbol: Symbol::WORD,
             },
-        ];
+        ]);
         assert!(parse(&mut vm).is_ok());
         assert_eq!(
             vm.data_stack,
@@ -210,7 +211,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            vm.operation_stack,
+            vm.operations,
             vec![
                 Operation::NOP_INC,
             ]

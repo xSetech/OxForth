@@ -91,11 +91,11 @@ pub fn scan(string: &str, vm: &mut VM) -> Result<(), CompilerError> {
             let token: Token = token_from_bytes(&mut word_or_number, vm);
             match token.symbol {
                 Symbol::NUMBER => {
-                    vm.token_stack.push(token);
+                    vm.tokens.push_back(token);
                     continue;
                 },
                 Symbol::WORD | Symbol::UNDEFINED => {
-                    vm.token_stack.push(token);
+                    vm.tokens.push_back(token);
                     return Result::Ok(());
                 },
             }
@@ -121,6 +121,8 @@ pub fn scan(string: &str, vm: &mut VM) -> Result<(), CompilerError> {
 mod tests {
     use super::*;
 
+    use std::collections::VecDeque;
+
     /// Test:  Assert numbers are recognized
     #[test]
     fn scan_test_numbers() {
@@ -131,8 +133,8 @@ mod tests {
         // test cases
         assert!(scan("1 2 3\n", &mut vm).is_ok());
         assert_eq!(
-            vm.token_stack,
-            vec![
+            vm.tokens,
+            VecDeque::from([
                 Token {
                     token: String::from("1"),
                     symbol: Symbol::NUMBER,
@@ -145,7 +147,7 @@ mod tests {
                     token: String::from("3"),
                     symbol: Symbol::NUMBER,
                 },
-            ]
+            ]),
         );
 
     }
@@ -159,28 +161,28 @@ mod tests {
 
         // test cases
         assert!(scan("1 2 3\n", &mut vm).is_ok());
-        assert_eq!(vm.token_stack.len(), 3);
-        vm.token_stack.clear();
+        assert_eq!(vm.tokens.len(), 3);
+        vm.tokens.clear();
 
         assert!(scan("1  2  3\n", &mut vm).is_ok());
-        assert_eq!(vm.token_stack.len(), 3);
-        vm.token_stack.clear();
+        assert_eq!(vm.tokens.len(), 3);
+        vm.tokens.clear();
 
         assert!(scan("1  2  3 \n", &mut vm).is_ok());
-        assert_eq!(vm.token_stack.len(), 3);
-        vm.token_stack.clear();
+        assert_eq!(vm.tokens.len(), 3);
+        vm.tokens.clear();
 
         assert!(scan(" 1  2  3 \n", &mut vm).is_ok());
-        assert_eq!(vm.token_stack.len(), 3);
-        vm.token_stack.clear();
+        assert_eq!(vm.tokens.len(), 3);
+        vm.tokens.clear();
 
         assert!(scan("  1  2  3 \n", &mut vm).is_ok());
-        assert_eq!(vm.token_stack.len(), 3);
-        vm.token_stack.clear();
+        assert_eq!(vm.tokens.len(), 3);
+        vm.tokens.clear();
 
         assert!(scan("  1 \x07 2  3 \n", &mut vm).is_ok());
-        assert_eq!(vm.token_stack.len(), 3);
-        vm.token_stack.clear();
+        assert_eq!(vm.tokens.len(), 3);
+        vm.tokens.clear();
 
     }
 
@@ -194,44 +196,44 @@ mod tests {
         // test cases
         assert!(scan("undefined_word\n", &mut vm).is_ok());
         assert_eq!(
-            vm.token_stack,
-            vec![
+            vm.tokens,
+            VecDeque::from([
                 Token {
                     token: String::from("undefined_word"),
                     symbol: Symbol::UNDEFINED,
                 },
-            ]
+            ]),
         );
-        vm.token_stack.clear();
+        vm.tokens.clear();
 
         assert!(scan(" undefined_word\n", &mut vm).is_ok());
         assert_eq!(
-            vm.token_stack,
-            vec![
+            vm.tokens,
+            VecDeque::from([
                 Token {
                     token: String::from("undefined_word"),
                     symbol: Symbol::UNDEFINED,
                 },
-            ]
+            ]),
         );
-        vm.token_stack.clear();
+        vm.tokens.clear();
 
         assert!(scan(" undefined_word\n", &mut vm).is_ok());
         assert_eq!(
-            vm.token_stack,
-            vec![
+            vm.tokens,
+            VecDeque::from([
                 Token {
                     token: String::from("undefined_word"),
                     symbol: Symbol::UNDEFINED,
                 },
-            ]
+            ]),
         );
-        vm.token_stack.clear();
+        vm.tokens.clear();
 
         assert!(scan(" 1 undefined_word\n", &mut vm).is_ok());
         assert_eq!(
-            vm.token_stack,
-            vec![
+            vm.tokens,
+            VecDeque::from([
                 Token {
                     token: String::from("1"),
                     symbol: Symbol::NUMBER,
@@ -240,9 +242,9 @@ mod tests {
                     token: String::from("undefined_word"),
                     symbol: Symbol::UNDEFINED,
                 },
-            ]
+            ]),
         );
-        vm.token_stack.clear();
+        vm.tokens.clear();
 
     }
 
@@ -256,15 +258,15 @@ mod tests {
         // "example" word that is initially undefined
         assert!(scan("example\n", &mut vm).is_ok());
         assert_eq!(
-            vm.token_stack,
-            vec![
+            vm.tokens,
+            VecDeque::from([
                 Token {
                     token: String::from("example"),
                     symbol: Symbol::UNDEFINED,
                 }
-            ],
+            ]),
         );
-        vm.token_stack.clear();
+        vm.tokens.clear();
 
         // define the word "example"
         vm.dictionary.insert("example", vec![]);
@@ -272,15 +274,15 @@ mod tests {
         // scan reports that "example" is a defined word
         assert!(scan("example\n", &mut vm).is_ok());
         assert_eq!(
-            vm.token_stack,
-            vec![
+            vm.tokens,
+            VecDeque::from([
                 Token {
                     token: String::from("example"),
                     symbol: Symbol::WORD,
                 }
-            ],
+            ]),
         );
-        vm.token_stack.clear();
+        vm.tokens.clear();
 
     }
 
