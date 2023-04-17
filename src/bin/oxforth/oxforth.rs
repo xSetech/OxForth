@@ -39,13 +39,13 @@ fn main() {
         exit(1);
     }
 
-    let (behavior, _options): (Behavior, Options) = arg_parse_result.unwrap();
+    let (behavior, options): (Behavior, Options) = arg_parse_result.unwrap();
     match behavior {
         Behavior::HELP => {
             arguments::help();
         },
         Behavior::REPL => {
-            repl::repl();
+            repl::repl(&options);
         }
     }
 

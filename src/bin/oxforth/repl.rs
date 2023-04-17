@@ -5,9 +5,11 @@ use std::io::{stdin, stdout, Write};
 use oxforth::compiler::scanner::scan;
 use oxforth::compiler::parser::parse;
 use oxforth::vm::interpreter::execute;
-use oxforth::vm::VM;
+use oxforth::vm::{DataType, VM};
 
-pub fn repl() {
+use super::arguments::Options;
+
+pub fn repl(options: &Options) {
     println!("Ctrl-C to exit");
     println!("");
 
@@ -28,62 +30,93 @@ pub fn repl() {
         }
 
         // Scan the input for tokens
-        print!("> scan ");
-        stdout().flush().unwrap();
+        if options.verbose {
+            print!("> scan ");
+            stdout().flush().unwrap();
+        }
         let scan_result = scan(&input, &mut vm);
         if let Err(err) = scan_result {
             print!("error: {}\n\n", err.msg);
             stdout().flush().unwrap();
             continue
         }
-        print!("ok: {} tokens\n", vm.tokens.len());
-        for token in vm.tokens.iter() {
-            print!("\t{:?}\n", token);
+        if options.verbose {
+            print!("ok: {} tokens\n", vm.tokens.len());
+            for token in vm.tokens.iter() {
+                print!("\t{:?}\n", token);
+            }
         }
 
         // Parse the scanned tokens into operations
-        print!("> parse ");
-        stdout().flush().unwrap();
+        if options.verbose {
+            print!("> parse ");
+            stdout().flush().unwrap();
+        }
         let parse_result = parse(&mut vm);
         if let Err(ref err) = parse_result {
             println!("error: {}", err.msg);
             stdout().flush().unwrap();
-        } else {
+        } else if options.verbose {
             println!("ok: {} stack items, {} operations", vm.data_stack.len(), vm.operations.len());
         }
-        println!("\tdata stack:");
-        for data in vm.data_stack.iter() {
-            println!("\t\t{:?}", data);
-        }
-        println!("\toperation stack:");
-        for operation in vm.operations.iter() {
-            println!("\t\t{:?}", operation);
+        if options.verbose {
+            println!("\tdata stack:");
+            for data in vm.data_stack.iter() {
+                println!("\t\t{:?}", data);
+            }
+            println!("\toperation stack:");
+            for operation in vm.operations.iter() {
+                println!("\t\t{:?}", operation);
+            }
         }
         if parse_result.is_err() {
-            println!("");
+            if options.verbose {
+                println!("");
+            }
             continue;
         }
 
         // Apply the operations against the VM
-        println!("> output:");
+        if options.verbose {
+            println!("> output:");
+        }
         let apply_result = execute(&mut vm);
         stdout().flush().unwrap();
-        print!("> execute ");
-        if let Err(err) = apply_result {
+        if options.verbose {
+            print!("> execute ");
+        }
+        if let Err(ref err) = apply_result {
             println!("error: {}", err.msg);
             stdout().flush().unwrap();
-        } else {
+        } else if options.verbose {
             println!("ok");
         }
-        println!("\tdata stack:");
-        for data in vm.data_stack.iter() {
-            println!("\t\t{:?}", data);
+        if options.verbose {
+            println!("\tdata stack:");
+            for data in vm.data_stack.iter() {
+                println!("\t\t{:?}", data);
+            }
+            println!("\toperation stack:");
+            for operation in vm.operations.iter().rev() {
+                println!("\t\t{:?}", operation);
+            }
+            println!("");
+        } else {
+            if let Some(cell) = vm.data_stack.last() {
+                match cell.data_type {
+                    DataType::NUMBER => {
+                        println!("{}", cell.value.parse::<i64>().unwrap())
+                    },
+                    DataType::STRING => {
+                        println!("{}", cell.value);
+                    }
+                }
+            } else {
+                if apply_result.is_ok() {
+                    println!("ok");
+                }
+            }
         }
-        println!("\toperation stack:");
-        for operation in vm.operations.iter() {
-            println!("\t\t{:?}", operation);
-        }
-        println!("");
         stdout().flush().unwrap();
     }
 }
