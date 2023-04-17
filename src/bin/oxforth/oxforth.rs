@@ -23,7 +23,7 @@ use arguments::{Behavior, Options};
 const SOURCE_LOCATION: &str = "https://github.com/xSetech/OxForth";
 
 /// What version, tag, or commit identifies this code?
-const SOURCE_VERSION: &str = "0.1";
+const SOURCE_VERSION: &str = "0.2";
 
 pub mod arguments;
 pub mod repl;
