@@ -17,7 +17,7 @@ crate-type = ["rlib", "dylib"]
 
 [[bin]]
 name = "oxforth"
-path = "src/bin/oxforth.rs"
+path = "src/bin/oxforth/oxforth.rs"
 
 [profile.dev]  # note: profile.debug is reserved
 debug = true

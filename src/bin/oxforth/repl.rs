@@ -1,19 +1,4 @@
-/*  Copyright © 2023 Seth Junot
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, version 3 of the License.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
-
-//! OxForth - binary entry point
+//! OxForth CLI - Read, Execute, Print Loop
 
 use std::io::{stdin, stdout, Write};
 
@@ -22,10 +7,7 @@ use oxforth::compiler::parser::parse;
 use oxforth::vm::interpreter::execute;
 use oxforth::vm::VM;
 
-/// Entry point
-fn main() {
-
-    println!("OxForth 0.1.0 - https://github.com/xSetech/OxForth");
+pub fn repl() {
     println!("Ctrl-C to exit");
     println!("");
 
@@ -103,6 +85,5 @@ fn main() {
         }
         println!("");
         stdout().flush().unwrap();
-
     }
 }
