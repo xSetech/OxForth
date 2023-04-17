@@ -61,10 +61,10 @@ pub fn repl(options: &Options) {
         }
         if options.verbose {
             println!("\tdata stack:");
-            for data in vm.data_stack.iter() {
+            for data in vm.data_stack.iter().rev() {
                 println!("\t\t{:?}", data);
             }
-            println!("\toperation stack:");
+            println!("\toperations:");
             for operation in vm.operations.iter() {
                 println!("\t\t{:?}", operation);
             }
@@ -93,11 +93,11 @@ pub fn repl(options: &Options) {
         }
         if options.verbose {
             println!("\tdata stack:");
-            for data in vm.data_stack.iter() {
+            for data in vm.data_stack.iter().rev() {
                 println!("\t\t{:?}", data);
             }
-            println!("\toperation stack:");
-            for operation in vm.operations.iter().rev() {
+            println!("\toperations:");
+            for operation in vm.operations.iter() {
                 println!("\t\t{:?}", operation);
             }
             println!("");
