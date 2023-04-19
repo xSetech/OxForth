@@ -7,20 +7,13 @@ use super::compiler::parser::Operation;
 
 pub mod interpreter;
 
-/// Data on the data stack is a collection of bytes representing these types.
-/// Casting to different types is done as needed depending on the executing word
-/// and whether it's even possible.
+/// Data on the data stack is represented by these types. Casting to different
+/// types is done as needed depending on the executing word and whether it's
+/// even possible.
 #[derive(Clone, Debug, PartialEq)]
-pub enum DataType {
-    STRING,
-    NUMBER,
-}
-
-/// Data that can be found on the "data stack"
-#[derive(Clone, Debug, PartialEq)]
-pub struct Data {
-    pub value: String,
-    pub data_type: DataType,
+pub enum Data {
+    STRING(String),
+    NUMBER(i64),
 }
 
 #[derive(Default)]

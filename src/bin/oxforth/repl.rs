@@ -5,7 +5,7 @@ use std::io::{stdin, stdout, Write};
 use oxforth::compiler::scanner::scan;
 use oxforth::compiler::parser::parse;
 use oxforth::vm::interpreter::execute;
-use oxforth::vm::{DataType, VM};
+use oxforth::vm::{Data, VM};
 
 use super::arguments::Options;
 
@@ -103,12 +103,12 @@ pub fn repl(options: &Options) {
             println!("");
         } else {
             if let Some(cell) = vm.data_stack.last() {
-                match cell.data_type {
-                    DataType::NUMBER => {
-                        println!("{}", cell.value.parse::<i64>().unwrap())
+                match cell {
+                    Data::NUMBER(n) => {
+                        println!("{}", n)
                     },
-                    DataType::STRING => {
-                        println!("{}", cell.value);
+                    Data::STRING(s) => {
+                        println!("{}", s);
                     }
                 }
             } else {

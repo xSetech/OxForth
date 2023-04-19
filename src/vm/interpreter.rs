@@ -3,14 +3,14 @@
 use std::cmp;
 use std::process;
 
-use super::{Data, DataType, VM};
+use super::{Data, VM};
 use super::VirtualMachineError;
 
 use super::super::compiler::parser::Operation;
 
 /// Common cast from STRING DataType to an i64, with error-checking
-fn int_and_data_from_stack<'vm>(vm: &'vm mut VM) -> Result<(i64, &'vm mut Data), VirtualMachineError> {
-    let o: Option<&mut Data> = vm.data_stack.last_mut();
+fn int_from_stack<'vm>(vm: &'vm mut VM) -> Result<i64, VirtualMachineError> {
+    let o: Option<Data> = vm.data_stack.pop();
     if o.is_none() {
         return Result::Err(
             VirtualMachineError {
@@ -18,16 +18,15 @@ fn int_and_data_from_stack<'vm>(vm: &'vm mut VM) -> Result<(i64, &'vm mut Data),
             }
         );
     }
-    let d: &mut Data = o.unwrap();
-    if d.data_type != DataType::NUMBER {
-        return Result::Err(
-            VirtualMachineError {
-                msg: String::from("refusing cast: string->number"),
-            }
-        );
+    let d: Data = o.unwrap();
+    if let Data::NUMBER(n) = d {
+        return Result::Ok(n);
     }
-    let n: i64 = d.value.parse::<i64>().unwrap();
-    return Result::Ok((n, d));
+    return Result::Err(
+        VirtualMachineError {
+            msg: String::from("not a number"),
+        }
+    );
 }
 
 /// Pop two numbers off the stack, cast to i64, and return them.
@@ -43,16 +42,14 @@ fn two_ints_from_stack<'vm>(vm: &'vm mut VM) -> Result<(i64, i64), VirtualMachin
     }
     let x1: Data = x1.unwrap();
     let x2: Data = x2.unwrap();
-    if x1.data_type == DataType::STRING || x2.data_type == DataType::STRING {
-        return Result::Err(
-            VirtualMachineError {
-                msg: String::from("refusing cast: string->number"),
-            }
-        );
+    if let (Data::NUMBER(x1), Data::NUMBER(x2)) = (x1, x2) {
+        return Result::Ok((x2, x1));
     }
-    let x1: i64 = x1.value.parse::<i64>().unwrap();
-    let x2: i64 = x2.value.parse::<i64>().unwrap();
-    return Result::Ok((x2, x1)); // x2 is lower on stack, so it goes first
+    return Result::Err(
+        VirtualMachineError {
+            msg: String::from("refusing cast: string->number"),
+        }
+    );
 }
 
 pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
@@ -67,17 +64,15 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
 
             // Core words that happen to be VM operations, in alphabetical order.
             Operation::ABS => {
-                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
-                d.value = n.abs().to_string();
+                let n: i64 = int_from_stack(vm)?;
+                let n: i64 = n.abs();
+                vm.data_stack.push(Data::NUMBER(n));
             },
             Operation::ADD => {
                 let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
                 let n3: i64 = n1 + n2;
                 vm.data_stack.push(
-                    Data {
-                        value: n3.to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(n3),
                 );
             },
             Operation::BYE => {
@@ -88,40 +83,28 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                 let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
                 let flag: bool = n1 == n2;
                 vm.data_stack.push(
-                    Data {
-                        value: (flag as i64).to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(flag as i64),  // todo: bool bits
                 );
             },
             Operation::CMP_GT => {
                 let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
                 let flag: bool = n1 > n2;
                 vm.data_stack.push(
-                    Data {
-                        value: (flag as i64).to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(flag as i64),  // todo: bool bits
                 );
             },
             Operation::CMP_LT => {
                 let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
                 let flag: bool = n1 < n2;
                 vm.data_stack.push(
-                    Data {
-                        value: (flag as i64).to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(flag as i64),  // todo: bool bits
                 );
             },
             Operation::CMP_NE => {
                 let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
                 let flag: bool = n1 != n2;
                 vm.data_stack.push(
-                    Data {
-                        value: (flag as i64).to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(flag as i64),  // todo: bool bits
                 );
             },
             Operation::DIV => {
@@ -135,10 +118,7 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                 }
                 let n3: i64 = n1 / n2; // no floating-point yet
                 vm.data_stack.push(
-                    Data {
-                        value: n3.to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(n3),
                 );
             },
             Operation::DROP => {
@@ -168,20 +148,14 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                 let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
                 let n3: i64 = cmp::max(n1, n2);
                 vm.data_stack.push(
-                    Data {
-                        value: n3.to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(n3),
                 );
             },
             Operation::MIN => {
                 let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
                 let n3: i64 = cmp::min(n1, n2);
                 vm.data_stack.push(
-                    Data {
-                        value: n3.to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(n3),
                 );
             },
             Operation::MOD => {
@@ -195,55 +169,47 @@ pub fn execute(vm: &mut VM) -> Result<(), VirtualMachineError> {
                 }
                 let n3: i64 = n1.rem_euclid(n2);
                 vm.data_stack.push(
-                    Data {
-                        value: n3.to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(n3),
                 );
             },
             Operation::MUL => {
                 let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
                 let n3: i64 = n1 * n2;
                 vm.data_stack.push(
-                    Data {
-                        value: n3.to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(n3),
                 );
             },
             Operation::NEGATE => {
-                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
-                d.value = (n * -1).to_string();
+                let n: i64 = int_from_stack(vm)?;
+                let n: i64 = n * -1;
+                vm.data_stack.push(Data::NUMBER(n));
             },
             Operation::SUB => {
                 let (n1, n2): (i64, i64) = two_ints_from_stack(vm)?;
                 let n3: i64 = n1 - n2;
                 vm.data_stack.push(
-                    Data {
-                        value: n3.to_string(),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(n3),
                 );
             },
             Operation::ZERO_EQ => {
-                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                let n: i64 = int_from_stack(vm)?;
                 let flag: bool = n == 0;
-                d.value = (flag as i64).to_string();
+                vm.data_stack.push(Data::NUMBER(flag as i64));  // todo: bool bits
             },
             Operation::ZERO_GT => {
-                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                let n: i64 = int_from_stack(vm)?;
                 let flag: bool = n > 0;
-                d.value = (flag as i64).to_string();
+                vm.data_stack.push(Data::NUMBER(flag as i64));  // todo: bool bits
             },
             Operation::ZERO_LT => {
-                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                let n: i64 = int_from_stack(vm)?;
                 let flag: bool = n < 0;
-                d.value = (flag as i64).to_string();
+                vm.data_stack.push(Data::NUMBER(flag as i64));  // todo: bool bits
             },
             Operation::ZERO_NE => {
-                let (n, d): (i64, &mut Data) = int_and_data_from_stack(vm)?;
+                let n: i64 = int_from_stack(vm)?;
                 let flag: bool = n != 0;
-                d.value = (flag as i64).to_string();
+                vm.data_stack.push(Data::NUMBER(flag as i64));  // todo: bool bits
             },
 
         }
@@ -259,7 +225,7 @@ mod tests {
 
     use std::collections::VecDeque;
 
-    use super::super::DataType;
+    use super::Data;
 
     /// Helper macro to confirm operations that require data on the stack produce an
     /// error if the stack doesn't contain enough data.
@@ -275,28 +241,16 @@ mod tests {
     macro_rules! single_value_op_test_case {
         ($vm:expr, $value:expr, $operation:expr, $expected:expr) => {{
             $vm.data_stack = vec![
-                Data {
-                    value: String::from("bottom of stack - should be ignored"),
-                    data_type: DataType::STRING,
-                },
-                Data {
-                    value: String::from($value.to_string()),
-                    data_type: DataType::NUMBER,
-                },
+                Data::STRING(String::from("bottom of stack - should be ignored")),
+                Data::NUMBER($value),
             ];
             $vm.operations = VecDeque::from([$operation]);
             assert!(execute(&mut $vm).is_ok());
             assert_eq!(
                 $vm.data_stack,
                 vec![
-                    Data {
-                        value: String::from("bottom of stack - should be ignored"),
-                        data_type: DataType::STRING,
-                    },
-                    Data {
-                        value: String::from($expected.to_string()),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::STRING(String::from("bottom of stack - should be ignored")),
+                    Data::NUMBER($expected),
                 ]
             );
         }};
@@ -306,32 +260,17 @@ mod tests {
     macro_rules! two_in_one_out_op_test_case {
         ($vm:expr, $value1:expr, $value2:expr, $operation:expr, $expected:expr) => {{
             $vm.data_stack = vec![
-                Data {
-                    value: String::from("bottom of stack - should be ignored"),
-                    data_type: DataType::STRING,
-                },
-                Data {
-                    value: String::from($value1.to_string()),
-                    data_type: DataType::NUMBER,
-                },
-                Data {
-                    value: String::from($value2.to_string()), // top of stack
-                    data_type: DataType::NUMBER,
-                },
+                Data::STRING(String::from("bottom of stack - should be ignored")),
+                Data::NUMBER($value1),
+                Data::NUMBER($value2),
             ];
             $vm.operations = VecDeque::from([$operation]);
             assert!(execute(&mut $vm).is_ok());
             assert_eq!(
                 $vm.data_stack,
                 vec![
-                    Data {
-                        value: String::from("bottom of stack - should be ignored"),
-                        data_type: DataType::STRING,
-                    },
-                    Data {
-                        value: String::from($expected.to_string()),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::STRING(String::from("bottom of stack - should be ignored")),
+                    Data::NUMBER($expected),
                 ]
             );
         }};
@@ -358,19 +297,13 @@ mod tests {
 
         // case:  refuses to cast a string -> int
         vm.data_stack = vec![
-            Data {
-                value: String::from("item1"),
-                data_type: DataType::STRING,
-            },
+            Data::STRING(String::from("item1")),
         ];
         vm.operations = VecDeque::from([Operation::ABS]);
         assert!(execute(&mut vm).is_err());
 
         vm.data_stack = vec![
-            Data {
-                value: String::from("item1"),
-                data_type: DataType::STRING,
-            },
+            Data::STRING(String::from("item1")),
         ];
         vm.operations = VecDeque::from([Operation::NEGATE]);
         assert!(execute(&mut vm).is_err());
@@ -501,24 +434,15 @@ mod tests {
 
         // case:  drop removes a single stack item from the top
         vm.data_stack = vec![
-            Data {
-                value: String::from("item1"),
-                data_type: DataType::STRING,
-            },
-            Data {
-                value: String::from("item2"),  // <- top of stack
-                data_type: DataType::STRING,
-            },
+            Data::STRING(String::from("item1")),
+            Data::STRING(String::from("item2")),  // <- top of stack
         ];
         vm.operations = VecDeque::from([Operation::DROP]);
         assert!(execute(&mut vm).is_ok());
         assert_eq!(
             vm.data_stack,
             vec![
-                Data {
-                    value: String::from("item1"),
-                    data_type: DataType::STRING,
-                },
+                Data::STRING(String::from("item1")),
             ]
         );
 
@@ -533,32 +457,17 @@ mod tests {
 
         // case:  duplicates the top stack entry
         vm.data_stack = vec![
-            Data {
-                value: String::from("item1"),
-                data_type: DataType::STRING,
-            },
-            Data {
-                value: String::from("item2"),  // <- top of stack
-                data_type: DataType::STRING,
-            },
+            Data::STRING(String::from("item1")),
+            Data::STRING(String::from("item2")),  // <- top of stack
         ];
         vm.operations = VecDeque::from([Operation::DUP]);
         assert!(execute(&mut vm).is_ok());
         assert_eq!(
             vm.data_stack,
             vec![
-                Data {
-                    value: String::from("item1"),
-                    data_type: DataType::STRING,
-                },
-                Data {
-                    value: String::from("item2"),
-                    data_type: DataType::STRING,
-                },
-                Data {
-                    value: String::from("item2"),  // <- top of stack
-                    data_type: DataType::STRING,
-                },
+                Data::STRING(String::from("item1")),
+                Data::STRING(String::from("item2")),
+                Data::STRING(String::from("item2")),  // <- top of stack
             ]
         );
 
@@ -574,29 +483,26 @@ mod tests {
         empty_stack_test_case!(vm, Operation::ZERO_LT);
         empty_stack_test_case!(vm, Operation::ZERO_NE);
 
-        // case:  refuses to cast a string -> int
-        vm.data_stack = vec![
-            Data {
-                value: String::from("item1"),
-                data_type: DataType::STRING,
-            },
-        ];
-
+        // case:  refuses to cast a string -> int, drops value from stack
+        vm.data_stack = vec![Data::STRING(String::from("item1"))];
         vm.operations = VecDeque::from([Operation::ZERO_EQ]);
         assert!(execute(&mut vm).is_err());
-        assert_eq!(vm.data_stack.len(), 1);
+        assert_eq!(vm.data_stack.len(), 0);
 
+        vm.data_stack = vec![Data::STRING(String::from("item1"))];
         vm.operations = VecDeque::from([Operation::ZERO_GT]);
         assert!(execute(&mut vm).is_err());
-        assert_eq!(vm.data_stack.len(), 1);
+        assert_eq!(vm.data_stack.len(), 0);
 
+        vm.data_stack = vec![Data::STRING(String::from("item1"))];
         vm.operations = VecDeque::from([Operation::ZERO_LT]);
         assert!(execute(&mut vm).is_err());
-        assert_eq!(vm.data_stack.len(), 1);
+        assert_eq!(vm.data_stack.len(), 0);
 
+        vm.data_stack = vec![Data::STRING(String::from("item1"))];
         vm.operations = VecDeque::from([Operation::ZERO_NE]);
         assert!(execute(&mut vm).is_err());
-        assert_eq!(vm.data_stack.len(), 1);
+        assert_eq!(vm.data_stack.len(), 0);
 
         // case:  normal comparisons
         single_value_op_test_case!(vm, 1, Operation::ZERO_EQ, 0);

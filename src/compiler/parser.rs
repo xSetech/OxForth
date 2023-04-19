@@ -4,7 +4,7 @@ use super::CompilerError;
 
 use super::scanner::Symbol;
 
-use super::super::vm::{Data, DataType, VM};
+use super::super::vm::{Data, VM};
 
 /// Operations change VM state (e.g. dictionary, stacks, etc).
 #[allow(non_camel_case_types)]
@@ -108,11 +108,9 @@ pub fn parse(vm: &mut VM) -> Result<(), CompilerError> {
         match token.symbol {
 
             Symbol::NUMBER => {
+                let parsed_token: i64 = token.token.parse::<i64>().unwrap();
                 vm.data_stack.push(
-                    Data {
-                        value: String::from(token.token),
-                        data_type: DataType::NUMBER,
-                    }
+                    Data::NUMBER(parsed_token)
                 );
             },
 
@@ -165,18 +163,9 @@ mod tests {
         assert_eq!(
             vm.data_stack,
             vec![
-                Data {
-                    value: String::from("1"),
-                    data_type: DataType::NUMBER,
-                },
-                Data {
-                    value: String::from("2"),
-                    data_type: DataType::NUMBER,
-                },
-                Data {
-                    value: String::from("3"),
-                    data_type: DataType::NUMBER,
-                },
+                Data::NUMBER(1),
+                Data::NUMBER(2),
+                Data::NUMBER(3),
             ]
         );
     }
@@ -204,10 +193,7 @@ mod tests {
         assert_eq!(
             vm.data_stack,
             vec![
-                Data {
-                    value: String::from("1"),
-                    data_type: DataType::NUMBER,
-                },
+                Data::NUMBER(1),
             ]
         );
         assert_eq!(
